@@ -3,7 +3,7 @@ import images from './api/images';
 
 const routes = express.Router();
 
-routes.get('/', (req: express.Request, res: express.Response) => {
+routes.get('/', (req: express.Request, res: express.Response): void => {
   res.send(
     'Welcome to the Image Processing API. <br>Created by <a href="https://github.com/CairoCoder">Said Abdul Aziem.</a>'
   );
