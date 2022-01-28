@@ -4,7 +4,10 @@ import path from 'path';
 import toJPEG from './JPEG';
 import toPNG from './PNG';
 
-const resize = async (req: express.Request, res: express.Response) => {
+const resize = async (
+  req: express.Request,
+  res: express.Response
+): Promise<Response | void> => {
   // Check endpoint URL.
   if (
     req.query.filename === undefined ||
@@ -16,6 +19,24 @@ const resize = async (req: express.Request, res: express.Response) => {
   }
 
   // get URL parameters
+  try {
+    if (!req.query.filename) {
+      res.status(404).send('please provide a valid image name');
+      return;
+    }
+    if (!req.query.height || !((req.query.height as unknown as number) > 0)) {
+      res.status(404).send('please provide a valid image height');
+      return;
+    }
+    if (!req.query.width || !((req.query.width as unknown as number) > 0)) {
+      res.status(404).send('please provide a valid image width');
+      return;
+    }
+  } catch (e) {
+    res.send(`Image width and height should both specified and greater than 0`);
+    return;
+  }
+
   const image_name = req.query.filename as string;
   const image_width = parseInt(req.query.width as string);
   const image_height = parseInt(req.query.height as string);
@@ -44,14 +65,13 @@ const resize = async (req: express.Request, res: express.Response) => {
   const new_image_directory: string = path.join(
     __dirname + '../../../images/thumb/'
   );
+
   const new_image_path: string = new_image_directory + new_image_name;
-  console.log(new_image_path);
 
   try {
     // Check if the requested image exist
     try {
       fs.accessSync(image_path, fs.constants.F_OK);
-      console.log(`Requested image already exist.`);
     } catch (err) {
       res.send(`Requested image not exist.`);
       return;
@@ -61,17 +81,13 @@ const resize = async (req: express.Request, res: express.Response) => {
     try {
       fs.accessSync(new_image_path, fs.constants.F_OK);
       // Return the full path of the resized version
-      console.log(`Resized image exist.`);
       res.sendFile(new_image_path);
       return;
-    } catch (err) {
-      console.log(`There's no resized version of this image.`);
-    }
+    } catch (err) {}
 
     // Create the 'thumb' folder if it's not exist
     try {
       fs.accessSync(new_image_directory, fs.constants.F_OK);
-      console.log(`'thumb' folder already exist.`);
     } catch (err) {
       try {
         fs.mkdirSync(new_image_directory);
@@ -82,8 +98,6 @@ const resize = async (req: express.Request, res: express.Response) => {
     }
 
     // Start resizing requested image
-    console.log(`Start resizing, with format : ${fileFormat}`);
-
     if (fileFormat === 'jpeg') {
       await toJPEG(image_path, image_width, image_height, new_image_path);
     } else if (fileFormat === 'png') {
@@ -93,9 +107,7 @@ const resize = async (req: express.Request, res: express.Response) => {
     // Return the full path of the resized image
     res.sendFile(new_image_path);
     return;
-  } catch (err) {
-    console.log(err);
-  }
+  } catch (err) {}
 };
 
 export default resize;
